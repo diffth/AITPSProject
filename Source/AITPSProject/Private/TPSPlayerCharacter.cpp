@@ -2,6 +2,9 @@
 
 
 #include "TPSPlayerCharacter.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Camera/CameraComponent.h"
+#include "Components/StaticMeshComponent.h"
 
 // 생성자: 기본값 설정
 ATPSPlayerCharacter::ATPSPlayerCharacter()
@@ -10,7 +13,25 @@ ATPSPlayerCharacter::ATPSPlayerCharacter()
 	// GEMINI.md 규칙에 따라 기본적으로는 비활성화하며, 필요 시 true로 변경합니다.
 	PrimaryActorTick.bCanEverTick = false;
 
-	// TODO: 카메라 컴포넌트 및 스프링 암 컴포넌트를 여기서 생성하고 설정할 예정입니다.
+	// 스프링 암 컴포넌트 생성 및 설정
+	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	SpringArm->SetupAttachment(RootComponent);
+	SpringArm->TargetArmLength = CameraDistance; // 카메라 거리 적용
+	SpringArm->bUsePawnControlRotation = true;    // 마우스 시점 방향을 미리 회전 (컨트롤러 회전값 사용)
+
+	// 카메라 컴포넌트 생성 및 스프링 암 소켓에 부착
+	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
+	Camera->bUsePawnControlRotation = false;     // 카메라 자체는 컨트롤 회전으로 별도 회전하지 않음
+
+	// 임시 외형 메시 컴포넌트 생성 및 설정
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
+	StaticMesh->SetupAttachment(RootComponent);
+
+	// 캐릭터 몸통이 카메라가 바라보는 좌우 방향(Yaw)을 따라 회전하도록 설정
+	bUseControllerRotationYaw = true;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
 }
 
 // 게임 시작 시 또는 스폰 시 호출됩니다.
