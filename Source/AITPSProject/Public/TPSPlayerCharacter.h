@@ -33,7 +33,23 @@ public:
 
 	/**
 	 * [참고] 카메라 및 입력 기능 추가 계획
-	 * TODO: 카메라 붐(SpringArm)과 카메라 컴포넌트를 생성하여 부착할 예정입니다.
 	 * TODO: 이동(Move) 및 회전(Look) 입력을 위한 Enhanced Input 설정을 추가할 예정입니다.
 	 */
+
+private:
+	// 3인칭 카메라 거리를 유지하기 위한 스프링암 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	class USpringArmComponent* SpringArm;
+
+	// 플레이어 시점을 제공하는 카메라 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	class UCameraComponent* Camera;
+
+	// 캐릭터의 임시 외형을 보여주기 위한 스태틱 메시 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* StaticMesh;
+
+	// 에디터에서 직접 조정할 수 있는 카메라의 기본 거리
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	float CameraDistance = 400.0f;
 };
