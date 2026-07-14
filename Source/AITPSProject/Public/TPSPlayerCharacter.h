@@ -94,4 +94,16 @@ private:
 	// 사격의 최대 사거리 (디폴트 10,000.0f)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	float FireRange = 10000.0f;
+
+	// ==========================================
+	// UI 및 사용자 인터페이스 설정
+	// ==========================================
+
+	// 화면에 표시할 크로스헤어 UI 위젯 클래스 (에디터에서 WBP_Crosshair를 할당할 수 있도록 노출)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class UUserWidget> CrosshairWidgetClass;
+
+	// 생성 및 화면에 추가된 크로스헤어 UI 위젯의 런타임 인스턴스
+	UPROPERTY(Transient)
+	class UUserWidget* CrosshairWidget;
 };

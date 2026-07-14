@@ -9,6 +9,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Blueprint/UserWidget.h"
 
 // 생성자: 기본값 설정
 ATPSPlayerCharacter::ATPSPlayerCharacter()
@@ -62,6 +63,21 @@ void ATPSPlayerCharacter::BeginPlay()
 			{
 				UE_LOG(LogTemp, Error, TEXT("DefaultMappingContext가 지정되지 않았습니다! 에디터에서 에셋을 할당해 주세요."));
 			}
+		}
+
+		// 크로스헤어 UI 위젯 생성 및 화면 추가 (요구사항 반영)
+		if (CrosshairWidgetClass)
+		{
+			CrosshairWidget = CreateWidget<UUserWidget>(PlayerController, CrosshairWidgetClass);
+			if (CrosshairWidget)
+			{
+				CrosshairWidget->AddToViewport();
+				UE_LOG(LogTemp, Warning, TEXT("크로스헤어 UI 위젯(WBP_Crosshair)이 화면에 성공적으로 추가되었습니다."));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("CrosshairWidgetClass가 지정되지 않았습니다! 에디터에서 WBP_Crosshair 에셋을 할당해 주세요."));
 		}
 	}
 
