@@ -45,7 +45,10 @@ protected:
 	 */
 	void Look(const FInputActionValue& Value);
 
-
+	/**
+	 * 사격(Fire) 입력을 처리하는 함수입니다.
+	 */
+	void Fire(const FInputActionValue& Value);
 
 private:
 	// 3인칭 카메라 거리를 유지하기 위한 스프링암 컴포넌트
@@ -80,4 +83,15 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
+	// 점프 입력 액션 (IA_PlayerJump)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* JumpAction;
+
+	// 사격 입력 액션 (IA_PlayerFire)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* FireAction;
+
+	// 사격의 최대 사거리 (디폴트 10,000.0f)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	float FireRange = 10000.0f;
 };

@@ -8,7 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
+#include "DrawDebugHelpers.h"
 
 // 생성자: 기본값 설정
 ATPSPlayerCharacter::ATPSPlayerCharacter()
@@ -103,7 +103,25 @@ void ATPSPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 			UE_LOG(LogTemp, Error, TEXT("LookAction이 지정되지 않았습니다! 에디터에서 에셋을 할당해 주세요."));
 		}
 
+		// 점프 입력 액션 바인딩 (눌렀을 때 시작되도록 Started 이벤트에 바인딩)
+		if (JumpAction)
+		{
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("JumpAction이 지정되지 않았습니다! 에디터에서 에셋을 할당해 주세요."));
+		}
 
+		// 사격 입력 액션 바인딩 (마우스 클릭 시 Triggered 이벤트로 바인딩)
+		if (FireAction)
+		{
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &ATPSPlayerCharacter::Fire);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("FireAction이 지정되지 않았습니다! 에디터에서 에셋을 할당해 주세요."));
+		}
 	}
 	else
 	{
@@ -145,4 +163,47 @@ void ATPSPlayerCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void ATPSPlayerCharacter::Fire(const FInputActionValue& Value)
+{
+	if (Camera == nullptr) return;
 
+	// 카메라 위치와 바라보는 방향 계산 (요구사항: 카메라의 위치와 바라보는 방향 기준)
+	FVector Start = Camera->GetComponentLocation();
+	FVector ForwardVector = Camera->GetForwardVector();
+	FVector End = Start + (ForwardVector * FireRange);
+
+	FHitResult HitResult;
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this); // 자기 자신은 충돌에서 제외
+
+	// ECC_Visibility 채널을 사용하여 단일 라인 트레이스 수행
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		ECC_Visibility,
+		CollisionParams
+	);
+
+	// 디버그 드로잉 지속 시간 (2초)
+	float DrawTime = 2.0f;
+
+	if (bHit)
+	{
+		// 무언가에 맞은 경우: 충돌 지점까지 초록색 선을 그리고, 그 자리에 빨간색 구형 점을 그린다
+		DrawDebugLine(GetWorld(), Start, HitResult.ImpactPoint, FColor::Green, false, DrawTime, 0, 1.5f);
+		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 12.0f, FColor::Red, false, DrawTime);
+
+		// 맞은 대상의 이름을 "경고 로그(노란색 - Warning)"로 출력한다
+		if (AActor* HitActor = HitResult.GetActor())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[사격 적중] 맞은 대상: %s"), *HitActor->GetName());
+		}
+	}
+	else
+	{
+		// 아무것도 맞지 않은 경우: 최대 사거리까지 빨간색 선을 그린다
+		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, DrawTime, 0, 1.5f);
+		UE_LOG(LogTemp, Warning, TEXT("[사격] 대상을 맞추지 못했습니다."));
+	}
+}
