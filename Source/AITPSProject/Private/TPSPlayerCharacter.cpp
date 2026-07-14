@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 // 생성자: 기본값 설정
 ATPSPlayerCharacter::ATPSPlayerCharacter()
@@ -214,6 +215,24 @@ void ATPSPlayerCharacter::Fire(const FInputActionValue& Value)
 		if (AActor* HitActor = HitResult.GetActor())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[사격 적중] 맞은 대상: %s"), *HitActor->GetName());
+		}
+
+		// 맞은 표면의 법선 방향으로 회전값 계산 (로컬 X축이 법선을 바라보도록 회전)
+		FRotator SpawnRotation = FRotationMatrix::MakeFromX(HitResult.ImpactNormal).Rotator();
+		
+		// 표면에 파묻히지 않도록 법선 방향으로 지정 오프셋만큼 띄운 스폰 위치 계산
+		FVector SpawnLocation = HitResult.ImpactPoint + (HitResult.ImpactNormal * ImpactFXOffset);
+
+		// 이펙트 에셋이 할당되어 있다면 스폰 (할당되지 않았다면 조용히 건너뜀)
+		if (BulletImpactFX)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(), 
+				BulletImpactFX, 
+				SpawnLocation, 
+				SpawnRotation, 
+				true
+			);
 		}
 	}
 	else

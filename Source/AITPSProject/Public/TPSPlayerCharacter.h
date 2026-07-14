@@ -106,4 +106,16 @@ private:
 	// 생성 및 화면에 추가된 크로스헤어 UI 위젯의 런타임 인스턴스
 	UPROPERTY(Transient)
 	class UUserWidget* CrosshairWidget;
+
+	// ==========================================
+	// 이펙트 및 파티클 설정
+	// ==========================================
+
+	// 사격 적중 시 생성할 파티클 이펙트 (에디터에서 P_BulletEffect 에셋을 할당 가능)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects", meta = (AllowPrivateAccess = "true"))
+	class UParticleSystem* BulletImpactFX;
+
+	// 이펙트가 표면에 파묻히지 않도록 표면 법선 방향으로 띄울 오프셋 거리
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta = (AllowPrivateAccess = "true"))
+	float ImpactFXOffset = 2.0f;
 };
