@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "InputActionValue.h"
 #include "TPSPlayerCharacter.generated.h"
 
 /**
@@ -31,10 +32,20 @@ public:
 	// 입력을 바인딩하기 위해 호출됩니다.
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+protected:
 	/**
-	 * [참고] 카메라 및 입력 기능 추가 계획
-	 * TODO: 이동(Move) 및 회전(Look) 입력을 위한 Enhanced Input 설정을 추가할 예정입니다.
+	 * 이동(Move) 입력을 처리하는 함수입니다.
+	 * @param Value 입력 액션으로부터 넘어온 2D 벡터값 (X: 앞뒤, Y: 좌우)
 	 */
+	void Move(const FInputActionValue& Value);
+
+	/**
+	 * 시점 회전(Look) 입력을 처리하는 함수입니다.
+	 * @param Value 마우스 상하/좌우 움직임에 따른 2D 벡터값 (X: Yaw, Y: Pitch)
+	 */
+	void Look(const FInputActionValue& Value);
+
+
 
 private:
 	// 3인칭 카메라 거리를 유지하기 위한 스프링암 컴포넌트
@@ -52,4 +63,21 @@ private:
 	// 에디터에서 직접 조정할 수 있는 카메라의 기본 거리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	float CameraDistance = 400.0f;
+
+	// ==========================================
+	// 입력 시스템 (Enhanced Input) 에셋 설정
+	// ==========================================
+
+	// 기본 입력 매핑 컨텍스트 (IMC_PlayerDefault)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputMappingContext* DefaultMappingContext;
+
+	// 이동 입력 액션 (IA_PlayerMove)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* MoveAction;
+
+	// 시점 회전 입력 액션 (IA_PlayerLook)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* LookAction;
+
 };
