@@ -25,6 +25,9 @@ protected:
 	// 게임 시작 시 또는 스폰 시 호출됩니다.
 	virtual void BeginPlay() override;
 
+	// 에디터에서 속성 변경 시 실시간 반영을 위한 OnConstruction 오버라이드
+	virtual void OnConstruction(const FTransform& Transform) override;
+
 public:	
 	// 매 프레임 호출됩니다.
 	virtual void Tick(float DeltaTime) override;
@@ -59,9 +62,13 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* Camera;
 
-	// 캐릭터의 임시 외형을 보여주기 위한 스태틱 메시 컴포넌트
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
-	class UStaticMeshComponent* StaticMesh;
+	// 에디터에서 직접 조정할 수 있는 스켈레탈 메시의 위치 보정 값
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
+	FVector MeshOffset;
+
+	// 에디터에서 직접 조정할 수 있는 스켈레탈 메시의 회전 보정 값
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
+	FRotator MeshRotation;
 
 	// 에디터에서 직접 조정할 수 있는 카메라의 기본 거리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
@@ -94,6 +101,10 @@ private:
 	// 사격의 최대 사거리 (디폴트 10,000.0f)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	float FireRange = 10000.0f;
+
+	// 사격 시 가할 기본 데미지 수치 (에디터에서 자유롭게 조정 가능)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	float FireDamage = 20.0f;
 
 	// ==========================================
 	// UI 및 사용자 인터페이스 설정

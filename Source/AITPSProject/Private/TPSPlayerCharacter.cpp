@@ -4,7 +4,9 @@
 #include "TPSPlayerCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -30,9 +32,33 @@ ATPSPlayerCharacter::ATPSPlayerCharacter()
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 	Camera->bUsePawnControlRotation = false;     // 카메라 자체는 컨트롤 회전으로 별도 회전하지 않음
 
-	// 임시 외형 메시 컴포넌트 생성 및 설정
-	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMesh"));
-	StaticMesh->SetupAttachment(RootComponent);
+	// 스켈레탈 메시 기본 오프셋 및 회전값 초기화
+	MeshOffset = FVector(0.0f, 0.0f, -90.0f);
+	MeshRotation = FRotator(0.0f, -90.0f, 0.0f);
+
+	// SKM_Manny_Simple 스켈레탈 메시 로드 및 기본 메시 슬롯에 적용
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MannyMesh(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple"));
+	if (MannyMesh.Succeeded() && GetMesh())
+	{
+		GetMesh()->SetSkeletalMesh(MannyMesh.Object);
+		GetMesh()->SetRelativeLocationAndRotation(MeshOffset, MeshRotation);
+	}
+
+	// 캡슐 컴포넌트 콜리전 설정: 플레이어 몸통(캡슐)은 사격 판정(ECC_Visibility)에서 제외
+	if (GetCapsuleComponent())
+	{
+		GetCapsuleComponent()->SetCollisionObjectType(ECC_Pawn); // 오브젝트 타입은 Pawn으로 유지
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	}
+
+	// 메시 컴포넌트 콜리전 설정: 물리 충돌 없이 사격 판정(ECC_Visibility)만 받도록 설정
+	if (GetMesh())
+	{
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly); // 물리 충돌 방지 (쿼리 전용)
+		GetMesh()->SetCollisionObjectType(ECC_Pawn); // 오브젝트 타입은 Pawn으로 유지
+		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore); // 다른 물리 충돌 채널은 전부 무시
+		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block); // 사격 판정 채널만 블록
+	}
 
 	// 카메라가 회전해도 캐릭터의 Yaw 회전이 강제로 동기화되지 않도록 설정 (이동 방향 회전을 위해 false 지정)
 	bUseControllerRotationYaw = false;
@@ -43,6 +69,17 @@ ATPSPlayerCharacter::ATPSPlayerCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	// 캐릭터가 회전하는 속도 설정 (초당 회전 각도)
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
+}
+
+// 에디터에서 속성 수정 시 실시간으로 스켈레탈 메시의 보정값을 적용합니다.
+void ATPSPlayerCharacter::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (GetMesh())
+	{
+		GetMesh()->SetRelativeLocationAndRotation(MeshOffset, MeshRotation);
+	}
 }
 
 // 게임 시작 시 또는 스폰 시 호출됩니다.
@@ -211,10 +248,19 @@ void ATPSPlayerCharacter::Fire(const FInputActionValue& Value)
 		DrawDebugLine(GetWorld(), Start, HitResult.ImpactPoint, FColor::Green, false, DrawTime, 0, 1.5f);
 		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 12.0f, FColor::Red, false, DrawTime);
 
-		// 맞은 대상의 이름을 "경고 로그(노란색 - Warning)"로 출력한다
+		// 맞은 대상의 이름을 "경고 로그(노란색 - Warning)"로 출력하고, 데미지를 가합니다.
 		if (AActor* HitActor = HitResult.GetActor())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("[사격 적중] 맞은 대상: %s"), *HitActor->GetName());
+
+			// 기본 데미지 전달 API 호출 (데미지 타입 기본값인 nullptr 전달)
+			UGameplayStatics::ApplyDamage(
+				HitActor,
+				FireDamage,
+				GetController(),
+				this,
+				nullptr
+			);
 		}
 
 		// 맞은 표면의 법선 방향으로 회전값 계산 (로컬 X축이 법선을 바라보도록 회전)
