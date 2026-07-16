@@ -60,13 +60,13 @@ ATPSPlayerCharacter::ATPSPlayerCharacter()
 		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block); // 사격 판정 채널만 블록
 	}
 
-	// 카메라가 회전해도 캐릭터의 Yaw 회전이 강제로 동기화되지 않도록 설정 (이동 방향 회전을 위해 false 지정)
-	bUseControllerRotationYaw = false;
+	// 카메라가 회전하면 캐릭터의 Yaw 회전이 강제로 동기화되도록 설정 (카메라 방향 정면 유지)
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 
-	// 캐릭터가 이동하는 방향을 바라보도록 자동 회전을 활성화
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	// 캐릭터가 이동하는 방향을 바라보도록 자동 회전을 비활성화
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 	// 캐릭터가 회전하는 속도 설정 (초당 회전 각도)
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
 }
