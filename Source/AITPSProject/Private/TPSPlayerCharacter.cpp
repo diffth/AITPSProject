@@ -13,6 +13,7 @@
 #include "DrawDebugHelpers.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "TPSPlayerAnimInstance.h"
 
 // 생성자: 기본값 설정
 ATPSPlayerCharacter::ATPSPlayerCharacter()
@@ -226,6 +227,18 @@ void ATPSPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ATPSPlayerCharacter::Fire(const FInputActionValue& Value)
 {
+	// 플레이어 애니메이션 인스턴스로 형변환하여 공격 애니메이션 재생 호출
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		if (UAnimInstance* AnimInst = MeshComp->GetAnimInstance())
+		{
+			if (UTPSPlayerAnimInstance* PlayerAnimInst = Cast<UTPSPlayerAnimInstance>(AnimInst))
+			{
+				PlayerAnimInst->PlayAttackAnim();
+			}
+		}
+	}
+
 	if (Camera == nullptr) return;
 
 	// 카메라 위치와 바라보는 방향 계산 (요구사항: 카메라의 위치와 바라보는 방향 기준)

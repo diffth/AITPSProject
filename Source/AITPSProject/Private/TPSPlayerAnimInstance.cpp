@@ -58,3 +58,16 @@ void UTPSPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		}
 	}
 }
+
+void UTPSPlayerAnimInstance::PlayAttackAnim()
+{
+	// 공격 몽타주가 유효하게 바인딩되어 있는 경우에만 재생
+	if (AttackMontage != nullptr)
+	{
+		// 애니메이션 중복 재생 방지 (이미 재생 중이 아닐 때만 플레이)
+		if (!Montage_IsPlaying(AttackMontage))
+		{
+			Montage_Play(AttackMontage);
+		}
+	}
+}

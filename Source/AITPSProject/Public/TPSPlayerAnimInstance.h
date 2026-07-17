@@ -24,10 +24,18 @@ public:
 	// 애니메이션 인스턴스가 초기화될 때 호출되는 함수
 	virtual void NativeInitializeAnimation() override;
 
+	// 공격 애니메이션(몽타주) 재생 함수
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	void PlayAttackAnim();
+
 private:
 	// 애니메이션을 소유한 플레이어 캐릭터 캐싱
 	UPROPERTY(BlueprintReadOnly, Category = "Character", meta = (AllowPrivateAccess = "true"))
 	class ATPSPlayerCharacter* PlayerCharacter;
+
+	// 사격 시 재생할 공격 애님 몽타주
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+	class UAnimMontage* AttackMontage;
 
 	// 앞뒤 이동 속도 (내적 결과값: 전방 이동 시 양수, 후방 이동 시 음수)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
