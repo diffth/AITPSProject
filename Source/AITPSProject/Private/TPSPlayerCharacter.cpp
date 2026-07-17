@@ -44,6 +44,13 @@ ATPSPlayerCharacter::ATPSPlayerCharacter()
 		GetMesh()->SetRelativeLocationAndRotation(MeshOffset, MeshRotation);
 	}
 
+	// 애니메이션 블루프린트(ABP_TPSPlayer) 클래스 로드 및 적용
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBPClass(TEXT("/Game/Animation/ABP_TPSPlayer.ABP_TPSPlayer_C"));
+	if (AnimBPClass.Succeeded() && GetMesh())
+	{
+		GetMesh()->SetAnimInstanceClass(AnimBPClass.Class);
+	}
+
 	// 캡슐 컴포넌트 콜리전 설정: 플레이어 몸통(캡슐)은 사격 판정(ECC_Visibility)에서 제외
 	if (GetCapsuleComponent())
 	{
