@@ -106,6 +106,10 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	float FireDamage = 20.0f;
 
+	// 오른손에 부착될 총기(라이플) 메시 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	class USkeletalMeshComponent* RifleMeshComp;
+
 	// ==========================================
 	// UI 및 사용자 인터페이스 설정
 	// ==========================================

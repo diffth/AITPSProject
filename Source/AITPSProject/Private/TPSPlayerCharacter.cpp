@@ -52,6 +52,19 @@ ATPSPlayerCharacter::ATPSPlayerCharacter()
 		GetMesh()->SetAnimInstanceClass(AnimBPClass.Class);
 	}
 
+	// 총기 스켈레탈 메시 컴포넌트 생성 및 오른손 소켓에 부착
+	RifleMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RifleMeshComp"));
+	RifleMeshComp->SetupAttachment(GetMesh(), TEXT("HandGrip_R"));
+	RifleMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 충돌 비활성화
+	RifleMeshComp->SetCollisionResponseToAllChannels(ECR_Ignore);       // 충돌 반응 무시
+
+	// 코드에서 직접 라이플 스켈레탈 메시 로드하여 컴포넌트에 적용
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> RifleAsset(TEXT("/Game/Weapons/Rifle/Meshes/SKM_Rifle"));
+	if (RifleAsset.Succeeded())
+	{
+		RifleMeshComp->SetSkeletalMesh(RifleAsset.Object);
+	}
+
 	// 캡슐 컴포넌트 콜리전 설정: 플레이어 몸통(캡슐)은 사격 판정(ECC_Visibility)에서 제외
 	if (GetCapsuleComponent())
 	{
