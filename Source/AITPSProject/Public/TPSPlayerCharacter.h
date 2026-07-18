@@ -110,6 +110,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
 	class USkeletalMeshComponent* RifleMeshComp;
 
+	// 사격 시 재생할 총소리 사운드 에셋
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat", meta = (AllowPrivateAccess = "true"))
+	class USoundBase* BulletSound;
+
 	// ==========================================
 	// UI 및 사용자 인터페이스 설정
 	// ==========================================

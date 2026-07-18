@@ -252,6 +252,12 @@ void ATPSPlayerCharacter::Fire(const FInputActionValue& Value)
 		}
 	}
 
+	// 애니메이션 재생 직후 총소리 2D 사운드 재생
+	if (BulletSound != nullptr)
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), BulletSound);
+	}
+
 	if (Camera == nullptr) return;
 
 	// 카메라 위치와 바라보는 방향 계산 (요구사항: 카메라의 위치와 바라보는 방향 기준)
