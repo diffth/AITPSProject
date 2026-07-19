@@ -6,6 +6,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"
+#include "TPSEnemyAnimInstance.h"
+#include "Components/CapsuleComponent.h"
 
 // 생성자: 기본값 설정
 UTPSEnemyFSMComponent::UTPSEnemyFSMComponent()
@@ -43,6 +45,16 @@ void UTPSEnemyFSMComponent::BeginPlay()
 	if (OwnerCharacter && OwnerCharacter->GetCharacterMovement())
 	{
 		OwnerCharacter->GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+	}
+
+	// 게임 시작 시 소유한 캐릭터 메시의 애니메이션 인스턴스를 Anim에 캐싱 및 초기화
+	if (OwnerCharacter && OwnerCharacter->GetMesh())
+	{
+		Anim = Cast<UTPSEnemyAnimInstance>(OwnerCharacter->GetMesh()->GetAnimInstance());
+		if (Anim)
+		{
+			Anim->AnimState = EEnemyState::Idle;
+		}
 	}
 }
 
@@ -101,6 +113,12 @@ void UTPSEnemyFSMComponent::SetState(EEnemyState NewState)
 
 	EEnemyState OldState = CurrentState;
 	CurrentState = NewState;
+
+	// FSM 상태 변경 시 애니메이션 인스턴스의 AnimState도 동기화
+	if (Anim)
+	{
+		Anim->AnimState = NewState;
+	}
 
 	// 상태가 변경될 때마다 노란색 경고 로그(Warning)로 적 이름과 전후 상태를 출력합니다.
 	UE_LOG(LogTemp, Warning, TEXT("[적 FSM] '%s'의 상태 변경: %s -> %s"),
@@ -171,6 +189,10 @@ void UTPSEnemyFSMComponent::UpdateMove()
 	if (Distance <= AttackRange && AttackCooldownTimer <= 0.0f)
 	{
 		SetState(EEnemyState::Attack);
+		if (Anim)
+		{
+			Anim->bAttackPlay = true;
+		}
 		return;
 	}
 
@@ -191,79 +213,96 @@ void UTPSEnemyFSMComponent::UpdateMove()
 // 공격(Attack) 상태 업데이트 로직 (한글 주석)
 void UTPSEnemyFSMComponent::UpdateAttack()
 {
-	if (!OwnerCharacter) return;
+	if (!OwnerCharacter || !TargetPlayer) return;
 
-	// 공격 위치 설정 (적 캐릭터의 현재 위치)
-	FVector AttackLocation = OwnerCharacter->GetActorLocation();
-	
-	// 오버랩 결과 및 쿼리 파라미터 설정
-	TArray<FOverlapResult> OverlapResults;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(OwnerCharacter); // 공격자 자신은 제외
+	// 적 캐릭터와 플레이어 캐릭터 사이의 거리 계산
+	float Distance = FVector::Dist(OwnerCharacter->GetActorLocation(), TargetPlayer->GetActorLocation());
 
-	// AttackHitRadius 반경의 구체를 생성하여 감지
-	FCollisionShape SphereShape = FCollisionShape::MakeSphere(AttackHitRadius);
-	
-	// ECC_Pawn 채널을 사용해 구체 내 Pawn 대상 오버랩 수행
-	bool bHit = GetWorld()->OverlapMultiByChannel(
-		OverlapResults,
-		AttackLocation,
-		FQuat::Identity,
-		ECC_Pawn,
-		SphereShape,
-		QueryParams
-	);
-
-	// 감지된 캐릭터들을 담을 배열
-	TArray<ACharacter*> DetectedCharacters;
-	if (bHit)
+	// 플레이어가 공격 범위를 벗어나면 bAttackPlay=false로 설정하고 이동 상태로 복귀
+	if (Distance > AttackRange)
 	{
-		for (const FOverlapResult& Result : OverlapResults)
+		if (Anim)
 		{
-			ACharacter* DetectedChar = Cast<ACharacter>(Result.GetActor());
-			// 감지된 액터가 유효한 ACharacter이고 자신이 아니라면 목록에 추가
-			if (DetectedChar && DetectedChar != OwnerCharacter)
+			Anim->bAttackPlay = false;
+		}
+		SetState(EEnemyState::Move);
+		return;
+	}
+
+	// 공격 상태에서는 일정 시간(AttackCooldown)마다 근접 공격을 실행하고 bAttackPlay=true로 설정
+	if (AttackCooldownTimer <= 0.0f)
+	{
+		// 공격 위치 설정 (적 캐릭터의 현재 위치)
+		FVector AttackLocation = OwnerCharacter->GetActorLocation();
+		
+		// 오버랩 결과 및 쿼리 파라미터 설정
+		TArray<FOverlapResult> OverlapResults;
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(OwnerCharacter); // 공격자 자신은 제외
+
+		// AttackHitRadius 반경의 구체를 생성하여 감지
+		FCollisionShape SphereShape = FCollisionShape::MakeSphere(AttackHitRadius);
+		
+		// ECC_Pawn 채널을 사용해 구체 내 Pawn 대상 오버랩 수행
+		bool bHit = GetWorld()->OverlapMultiByChannel(
+			OverlapResults,
+			AttackLocation,
+			FQuat::Identity,
+			ECC_Pawn,
+			SphereShape,
+			QueryParams
+		);
+
+		// 감지된 캐릭터들을 담을 배열
+		TArray<ACharacter*> DetectedCharacters;
+		if (bHit)
+		{
+			for (const FOverlapResult& Result : OverlapResults)
 			{
-				DetectedCharacters.Add(DetectedChar);
+				ACharacter* DetectedChar = Cast<ACharacter>(Result.GetActor());
+				// 감지된 액터가 유효한 ACharacter이고 자신이 아니라면 목록에 추가
+				if (DetectedChar && DetectedChar != OwnerCharacter)
+				{
+					DetectedCharacters.Add(DetectedChar);
+				}
 			}
 		}
-	}
 
-	// 감지된 대상이 있을 경우 데미지를 입히고 쿨다운을 적용하여 이동 상태로 전환
-	if (DetectedCharacters.Num() > 0)
-	{
-		for (ACharacter* DamagedChar : DetectedCharacters)
+		// 감지된 대상이 있을 경우 데미지를 입힘 (제한: 근접 공격 내부의 데미지 처리 코드는 수정하지 않는다.)
+		if (DetectedCharacters.Num() > 0)
 		{
-			// 감지된 대상에게 AttackDamage 만큼 데미지 적용
-			UGameplayStatics::ApplyDamage(
-				DamagedChar,
-				AttackDamage,
-				OwnerCharacter->GetController(),
-				OwnerCharacter,
-				UDamageType::StaticClass()
-			);
+			for (ACharacter* DamagedChar : DetectedCharacters)
+			{
+				// 감지된 대상에게 AttackDamage 만큼 데미지 적용
+				UGameplayStatics::ApplyDamage(
+					DamagedChar,
+					AttackDamage,
+					OwnerCharacter->GetController(),
+					OwnerCharacter,
+					UDamageType::StaticClass()
+				);
 
-			// 데미지 전달 여부를 노란색 경고 로그(Warning)로 출력
-			UE_LOG(LogTemp, Warning, TEXT("[적 공격] '%s'가 반경 %.1f 내의 '%s'에게 %.1f 만큼의 데미지를 전달했습니다."),
-				*OwnerCharacter->GetName(),
-				AttackHitRadius,
-				*DamagedChar->GetName(),
-				AttackDamage);
+				// 데미지 전달 여부를 노란색 경고 로그(Warning)로 출력
+				UE_LOG(LogTemp, Warning, TEXT("[적 공격] '%s'가 반경 %.1f 내의 '%s'에게 %.1f 만큼의 데미지를 전달했습니다."),
+					*OwnerCharacter->GetName(),
+					AttackHitRadius,
+					*DamagedChar->GetName(),
+					AttackDamage);
+			}
+		}
+		else
+		{
+			// 감지된 대상이 없더라도 근접 공격 시도는 수행되었으므로 로그를 남김
+			UE_LOG(LogTemp, Warning, TEXT("[적 공격] '%s' 주변에 감지된 캐릭터가 없어 데미지를 입히지 못했습니다."),
+				*OwnerCharacter->GetName());
 		}
 
-		// 공격 성공 후 쿨다운 타이머 설정
+		// 공격 성공/시도 후 쿨다운 타이머 설정 및 bAttackPlay=true 설정
 		AttackCooldownTimer = AttackCooldown;
-		
-		// 이동(Move) 상태로 복귀
-		SetState(EEnemyState::Move);
-	}
-	else
-	{
-		// 감지된 대상이 없으면 대기(Idle) 상태로 복귀
-		UE_LOG(LogTemp, Warning, TEXT("[적 공격] '%s' 주변에 감지된 캐릭터가 없어 대기(Idle) 상태로 복귀합니다."),
-			*OwnerCharacter->GetName());
-			
-		SetState(EEnemyState::Idle);
+		if (Anim)
+		{
+			Anim->bAttackPlay = true;
+		}
 	}
 }
 
@@ -278,6 +317,35 @@ void UTPSEnemyFSMComponent::NotifyDead()
 
 	// 사망 상태 진입 시 매 프레임 업데이트(Tick)를 완전히 비활성화합니다.
 	SetComponentTickEnabled(false);
+
+	if (OwnerCharacter != nullptr)
+	{
+		// 이동 즉시 멈추고 비활성화 (요구사항 반영)
+		if (OwnerCharacter->GetCharacterMovement())
+		{
+			OwnerCharacter->GetCharacterMovement()->StopMovementImmediately();
+			OwnerCharacter->GetCharacterMovement()->DisableMovement();
+		}
+
+		// 몸통(캡슐)과 메시 충돌을 모두 끕니다. (요구사항 반영)
+		if (OwnerCharacter->GetCapsuleComponent())
+		{
+			OwnerCharacter->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+		if (OwnerCharacter->GetMesh())
+		{
+			OwnerCharacter->GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+
+		// PlayDeadAnim() 호출 (요구사항 반영)
+		if (UAnimInstance* AnimInst = OwnerCharacter->GetMesh()->GetAnimInstance())
+		{
+			if (UTPSEnemyAnimInstance* EnemyAnimInst = Cast<UTPSEnemyAnimInstance>(AnimInst))
+			{
+				EnemyAnimInst->PlayDeadAnim();
+			}
+		}
+	}
 }
 
 // 피격 당했을 때 외부에서 호출하여 피격 상태로 전환시키는 함수 (한글 주석)

@@ -125,4 +125,8 @@ private:
 	// 추적 타겟이 되는 기본 플레이어 캐릭터 포인터
 	UPROPERTY()
 	class ACharacter* TargetPlayer;
+
+	// 적 애니메이션 인스턴스 캐싱용 참조 포인터 (내부용)
+	UPROPERTY()
+	class UTPSEnemyAnimInstance* Anim;
 };
