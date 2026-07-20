@@ -278,15 +278,8 @@ void ATPSPlayerCharacter::Fire(const FInputActionValue& Value)
 		CollisionParams
 	);
 
-	// 디버그 드로잉 지속 시간 (2초)
-	float DrawTime = 2.0f;
-
 	if (bHit)
 	{
-		// 무언가에 맞은 경우: 충돌 지점까지 초록색 선을 그리고, 그 자리에 빨간색 구형 점을 그린다
-		DrawDebugLine(GetWorld(), Start, HitResult.ImpactPoint, FColor::Green, false, DrawTime, 0, 1.5f);
-		DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 12.0f, FColor::Red, false, DrawTime);
-
 		// 맞은 대상의 이름을 "경고 로그(노란색 - Warning)"로 출력하고, 데미지를 가합니다.
 		if (AActor* HitActor = HitResult.GetActor())
 		{
@@ -322,8 +315,6 @@ void ATPSPlayerCharacter::Fire(const FInputActionValue& Value)
 	}
 	else
 	{
-		// 아무것도 맞지 않은 경우: 최대 사거리까지 빨간색 선을 그린다
-		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, DrawTime, 0, 1.5f);
 		UE_LOG(LogTemp, Warning, TEXT("[사격] 대상을 맞추지 못했습니다."));
 	}
 }
